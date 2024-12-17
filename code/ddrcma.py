@@ -406,6 +406,9 @@ class FullModel(AbstractModel):
 
     def decompose(self):
         if self.t_stall == self.teig:
+            # maximum condition nubmer
+            maxcond = 1e14
+            
             # update C
             D = np.linalg.eigvalsh(self.Z)
             fac = min(0.75 / abs(D.min()), 1.)
@@ -417,7 +420,7 @@ class FullModel(AbstractModel):
 
             # decomposition
             DD, self.B = np.linalg.eigh(self.C)
-            self.S = np.sqrt(DD)
+            self.S = np.sqrt(np.fmax(DD, np.max(DD) / maxcond))  # force the condition number to be smaller than threshold
             self.sqrtC = np.dot(self.B * self.S, self.B.T)
             self.invsqrtC = np.dot(self.B / self.S, self.B.T)
             self.Z[:, :] = 0.
@@ -620,7 +623,7 @@ class DdCma:
             self.mva_dr1 = (1 - self.mva_w) * self.mva_dr1 + self.mva_w * dr
             self.mva_dr2 = (1 - self.mva_w) * self.mva_dr2 + self.mva_w * dr**2
             var = (3 * (self.gs**2 + 1) * self.lam - (self.gs - 1)**2 * (self.lam + 1)) * (self.lam + 1) / (self.lam - 1)**2 / 36 / self.gs**2
-            self.ds = self.ds_factor * abs(self.mva_dr2 - self.mva_dr1**2) / (self.mva_dr1**2 + var / 4)
+            self.ds = max(self.ds_factor * (self.mva_dr2 - self.mva_dr1**2) / (self.mva_dr1**2 + var / 4), 1)
             self.dr = dr
 
             # clip
@@ -743,8 +746,8 @@ class Checker:
         return self._cma.t >= _len and fmin_med >= fmed_med
 
     def check_conditioncov(self):
-        return (self._cma.model.sqrt_condition_number > 1e7
-                or np.max(self._cma.D) / np.min(self._cma.D) > 1e7)
+        return (self._cma.model.sqrt_condition_number > 1e6
+                or np.max(self._cma.D) / np.min(self._cma.D) > 1e6)
 
     def check_noeffectaxis(self):
         t = self._cma.t % self._N
