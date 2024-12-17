@@ -746,7 +746,8 @@ class Checker:
         return self._cma.t >= _len and fmin_med >= fmed_med
 
     def check_conditioncov(self):
-        return (self._cma.model.sqrt_condition_number > 1e6
+        return (np.min(self._cma.D) <= 0
+                or self._cma.model.sqrt_condition_number > 1e6
                 or np.max(self._cma.D) / np.min(self._cma.D) > 1e6)
 
     def check_noeffectaxis(self):
