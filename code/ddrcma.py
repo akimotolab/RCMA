@@ -1088,7 +1088,7 @@ if __name__ == "__main__":
     """USAGE: python ddrcma.py 20 0 0 'range(13)' 'range(1)' 1
     argv[1] : dimension
     argv[2] : 0: original coordinate, 1: rotated coordinate
-    argv[3] : 0: dd-vs-cma-tpa, 1: dd-vs-cma-csa, 2: dd-cma-csa
+    argv[3] : 0: dd-vs-cma-tpa, 1: dd-vs-cma-csa, 2: dd-cma-csa, 3: dd-vs-cma-tpa-wo-short
     argv[4] : function id list (string of iterable)
     argv[5] : seed list (string of iterable)
     argv[6] : 0: no figure is produced, 1: figure is produced
@@ -1124,6 +1124,12 @@ if __name__ == "__main__":
             elif mode == 2:
                 ddcma = DdCma(func=func, xmean0=xmean0, sigma0=sigma0, model_type=FullModel, flg_covariance_cold_start=False)
                 logger = Logger(ddcma, prefix="../dat/ddcmacsa_func{}_dim{}_rot{}_seed{}".format(functype, N, rot, seed), variable_list=['xmean', 'D', 'sqrteigvals', 'sigma', 'beta'])
+            elif mode == 3:
+                ddcma = DdCma(func=func, xmean0=xmean0, sigma0=sigma0, model_type=VSModel, flg_tpa=True, beta_cond=3e1, flg_short_axis=False)
+                logger = Logger(ddcma, prefix="../dat/ddrcmatpa_func{}_dim{}_rot{}_seed{}".format(functype, N, rot, seed), variable_list=['xmean', 'D', 'sqrteigvals', 'sigma', 'beta', 'model.kshort', 'model.klong'])
+            elif mode == 4:
+                ddcma = DdCma(func=func, xmean0=xmean0, sigma0=sigma0, model_type=VSModel, flg_tpa=True, beta_cond=3e1, flg_k_update=False)
+                logger = Logger(ddcma, prefix="../dat/ddrcmatpa_func{}_dim{}_rot{}_seed{}".format(functype, N, rot, seed), variable_list=['xmean', 'D', 'sqrteigvals', 'sigma', 'beta', 'model.kshort', 'model.klong'])
             else:
                 raise ValueError
             checker = Checker(ddcma)
