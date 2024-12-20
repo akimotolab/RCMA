@@ -28,10 +28,11 @@ def myeigh(A, U, mode=-1, value_only=False):
             return D, E
     else:
         # standard
+        M = np.dot(A * U, A.T)
         if value_only:
-            return np.linalg.eigvalsh(np.dot(A * U, A.T))
+            return np.linalg.eigvalsh((M + M.T) / 2)
         else:
-            return np.linalg.eigh(np.dot(A * U, A.T))
+            return np.linalg.eigh((M + M.T) / 2)
 
 
 class AbstractModel:
@@ -122,7 +123,7 @@ class VSModel(AbstractModel):
     """
 
     def __init__(self, N, lam,
-                 kmax=None, flg_k_update=True, 
+                 kmax=None, flg_k_update=True, flg_short_axis=True,
                  beta_cond=6.0, beta_wait=None, flg_active_update=True):
 
         self.N = N
@@ -131,6 +132,7 @@ class VSModel(AbstractModel):
         self.beta_wait = beta_wait if beta_wait else 10. * math.log10(beta_cond)
         self.flg_active_update = flg_active_update
         self.flg_k_update = flg_k_update
+        self.flg_short_axis = flg_short_axis
 
         # intermediate weights
         w = math.log((self.lam + 1) / 2.0) - np.log(np.arange(1, self.lam + 1))
@@ -144,8 +146,12 @@ class VSModel(AbstractModel):
         self.kmax = kmax if kmax is not None else lam
         self.S = np.ones(self.N)
         self.V = np.zeros((self.kmax, self.N))
-        self.klong = 1 if self.flg_k_update else int(math.ceil(self.kmax / 2))
-        self.kshort = 1 if self.flg_k_update else int(math.floor(self.kmax / 2))
+        if self.flg_short_axis:
+            self.klong = 1 if self.flg_k_update else int(math.ceil(self.kmax / 2))
+            self.kshort = 1 if self.flg_k_update else int(math.floor(self.kmax / 2))
+        else:
+            self.klong = 1 if self.flg_k_update else self.kmax
+            self.kshort = 0
         self.update_complexity(self.kshort, self.klong, force_reset=True)
         self.t_wait = 0
 
@@ -291,13 +297,14 @@ class VSModel(AbstractModel):
         self.t_wait += 1    
         kshort, klong = ks, kl
         if self.flg_k_update:
-            if self.S[ks-1] < 1.0/self.beta_cond:
-                kshort = min(int(math.ceil(1.4 * self.kshort)), max(self.kmax // 2, self.kmax - klong))
-                self.S[ks:kshort] = 1.0
-                self.t_wait = 0
-            elif self.t_wait > self.t_wait_for_next_decrease:
-                kshort = np.sum(self.S < 1.0/self.beta_cond) + 1
-                self.S[kshort:ks] = 1.0
+            if self.flg_short_axis:
+                if self.S[ks-1] < 1.0/self.beta_cond:
+                    kshort = min(int(math.ceil(1.4 * self.kshort)), max(self.kmax // 2, self.kmax - klong))
+                    self.S[ks:kshort] = 1.0
+                    self.t_wait = 0
+                elif self.t_wait > self.t_wait_for_next_decrease:
+                    kshort = np.sum(self.S < 1.0/self.beta_cond) + 1
+                    self.S[kshort:ks] = 1.0
             if self.S[-kl] > self.beta_cond:
                 klong = min(int(math.ceil(1.4 * self.klong)), self.kmax - kshort)
                 self.S[-kl:-klong] = 1.0
