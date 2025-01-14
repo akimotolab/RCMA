@@ -125,6 +125,25 @@ class VSModel(AbstractModel):
     def __init__(self, N, lam,
                  kmax=None, flg_k_update=True, flg_short_axis=True,
                  beta_cond=6.0, beta_wait=None, flg_active_update=True):
+        """
+        Parameters
+        ----------
+        N : int
+            dimension
+        lam : int
+            lambda, number of samples per iteration
+        kmax : int (0 <= kmax <= N - 1), optional
+            maximum number of axes
+            None (default) : min(lam, N-1)
+        flg_k_update : bool, optional (default : True)
+            flag for k update
+        flg_short_axis : bool, optional (default : True)
+            flag for short axis update
+        flg_active_update : bool, optional (default : True)
+            flag for active update
+        beta_cond : float, optional (default : 6.0)
+        beta_wait : int, optional (default : 10 * log10(beta_cond))
+        """
 
         self.N = N
         self.lam = lam
@@ -143,7 +162,7 @@ class VSModel(AbstractModel):
         self.mueff_negative = 1. / np.sum(w[w < 0] ** 2)
 
         # VS model parameters
-        self.kmax = kmax if kmax is not None else lam
+        self.kmax = min(kmax if kmax is not None else lam, self.N - 1)
         self.S = np.ones(self.N)
         self.V = np.zeros((self.kmax, self.N))
         if self.flg_short_axis:
@@ -299,7 +318,7 @@ class VSModel(AbstractModel):
         if self.flg_k_update:
             if self.flg_short_axis:
                 if self.S[ks-1] < 1.0/self.beta_cond:
-                    kshort = min(int(math.ceil(1.4 * self.kshort)), max(self.kmax // 2, self.kmax - klong))
+                    kshort = min(int(math.ceil(1.4 * self.kshort)), self.kmax // 2, self.kmax - klong)
                     self.S[ks:kshort] = 1.0
                     self.t_wait = 0
                 elif self.t_wait > self.t_wait_for_next_decrease:
