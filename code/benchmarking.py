@@ -501,11 +501,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Benchmarking Script")
     parser.add_argument('-m', '--method', type=int, required=True, help='0:dd-cma, 1:cma, 2:sep-cma, 3:dd-rcma, 4:dd-rcma-full, 5:vkd-cma, 6:vkd-cma-noadapt, 7:lmma, 8:rcma, 9:rcma-full, 10:ddcma-tpa, 11:lm-cma')
     parser.add_argument('-s', '--seed', type=int, required=True, help="seed")
-    parser.add_argument('-f', '--function', type=str2list, default="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17", help="function ID list, separated by comma")
+    parser.add_argument('-f', '--function', type=str2list, default="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19", help="function ID list, separated by comma")
     parser.add_argument('-d', '--dimension', type=str2list, default="80,160,320,640,1280,2560,5120,10240", help="dimension list, separated by comma")
+    parser.add_argument('-l', '--popsize', type=int, default=0, help="lambda, population size, number of candidate solutions per iteration")
     parser.add_argument('--maxeval', type=int, default=10000, help="budget (f-calls) = maxeval * dimension")
     parser.add_argument('--maxsec', type=float, default=float(60*60*24*365), help="budget (cpu-time) = maxsec")
-    parser.add_argument('--target', type=float, default=1e-10, help="budget (cpu-time) = maxsec")
+    parser.add_argument('--target', type=float, default=1e-10, help="target function value == target * f(m0)")
     parser.add_argument('--path', type=str, default='../dat/', help="path to the output directory")
     parser.add_argument('--debug', type=bool, default=False, help="debug mode")
 
@@ -522,7 +523,7 @@ if __name__ == "__main__":
             ftarget = args.target
             maxeval = args.maxeval * dim
             maxsec = args.maxsec
-            lam = 4 + int(3 * math.log(dim))
+            lam = 4 + int(3 * math.log(dim)) if args.popsize < 1 else args.popsize
             maxitr = maxeval // lam + 1 
             # method 
             elapsed_time = 0.0
@@ -578,6 +579,7 @@ if __name__ == "__main__":
                 with open(filename, "a") as f:
                     f.write("{} {} {} {}\n".format(elapsed_eval, elapsed_time, fbest / f0, sigma))
                     f.write("#" + condition)
+                    print("Terminated: " + condition)
                 if args.debug:
                     logger(t+1, elapsed_eval)
 

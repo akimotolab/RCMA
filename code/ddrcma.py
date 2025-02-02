@@ -145,6 +145,7 @@ class VSModel(AbstractModel):
         beta_wait : int, optional (default : 10 * log10(beta_cond))
         """
 
+        self.MAXCOND = 1e14
         self.N = N
         self.lam = lam
         self.beta_cond = beta_cond
@@ -302,8 +303,8 @@ class VSModel(AbstractModel):
             tLam[-lp:] += Lam[-lp:]
         gamma = np.exp(np.mean(np.log(tLam[ks:self.N-kl])))
 
-        self.S[:ks] = tLam[:ks] / gamma
-        self.S[-kl:] = tLam[-kl:] / gamma
+        self.S[-kl:] = np.fmin(tLam[-kl:] / gamma, self.MAXCOND) # Greatest Eigenvalue <= MAXCOND
+        self.S[:ks] = np.fmax(tLam[:ks] / gamma, self.S[-1] / self.MAXCOND) # Smallest Eigenvalue >= Greatest / MAXCOND
         self.S[ks:self.N-kl] = 1.0
         self.V[:min(ks, lm)] = U[:, :min(ks, lm)].T
         self.V[min(ks, lm):ks] = Uorth[:, :ks-min(ks, lm)].T
@@ -352,6 +353,8 @@ class FullModel(AbstractModel):
         flg_active_update : bool, optional (default = True)
 
         """
+
+        self.MAXCOND = 1e14
         self.N = N
         self.lam = lam
         self.beta_eig = beta_eig if beta_eig else 10. * self.N
@@ -432,9 +435,6 @@ class FullModel(AbstractModel):
 
     def decompose(self):
         if self.t_stall == self.teig:
-            # maximum condition nubmer
-            maxcond = 1e14
-            
             # update C
             D = np.linalg.eigvalsh(self.Z)
             fac = min(0.75 / abs(D.min()), 1.)
@@ -446,7 +446,7 @@ class FullModel(AbstractModel):
 
             # decomposition
             DD, self.B = np.linalg.eigh(self.C)
-            self.S = np.sqrt(np.fmax(DD, np.max(DD) / maxcond))  # force the condition number to be smaller than threshold
+            self.S = np.sqrt(np.fmax(DD, np.max(DD) / self.MAXCOND))  # force the condition number to be smaller than threshold
             self.sqrtC = np.dot(self.B * self.S, self.B.T)
             self.invsqrtC = np.dot(self.B / self.S, self.B.T)
             self.Z[:, :] = 0.

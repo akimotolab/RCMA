@@ -11,6 +11,11 @@ def random_axes(dim, n_axes):
         R[i] = R[i] / np.linalg.norm(R[i])
     return R
 
+def asymmetric_transformation_generator(dim, beta):
+    exp = beta * np.arange(dim) / (dim - 1)
+    def transform(x):
+        return x ** (1 + exp * np.sqrt(np.fmax(x, 0)))
+    return transform
 
 class BenchmarkFunction:
 
@@ -126,6 +131,16 @@ class BenchmarkFunction:
             self.func = self.random_rotation(func, dim)
             self.x0 = 0.1 * np.random.randn(dim)
             self.sigma0 = 0.1 * np.ones(dim)
+        elif id_func == 18:
+            # bent cigar
+            self.func = self.generate_bent_cigar(dim)
+            self.x0 = 3.0 * np.random.randn(dim)
+            self.sigma0 = 1.0 * np.ones(dim)
+        elif id_func == 19:
+            # attractive sector
+            self.func = self.generate_attractive_sector(dim)
+            self.x0 = 3.0 * np.random.randn(dim)
+            self.sigma0 = 1.0 * np.ones(dim)
         else:
             raise NotImplementedError
 
@@ -193,3 +208,32 @@ class BenchmarkFunction:
             (x[:, :-1]**2 - x[:, 1:])**2, axis=1) + np.sum(
                 (x[:, :-1] - 1.0)**2, axis=1)
     
+    def generate_bent_cigar(self, dim, xopt=None):
+        R = random_axes(dim, dim)
+        T = asymmetric_transformation_generator(dim, beta=0.5)
+        D = np.array([1.0] + [1e6] * (dim - 1))
+        if xopt is None:
+            xopt = np.zeros(dim) 
+        def bentcigar(x):
+            z = np.dot(T(np.dot(x - xopt, R.T)), R.T)
+            return np.dot(z ** 2, D)
+        return bentcigar
+    
+    def generate_attractive_sector(self, dim, xopt=None):
+        R = random_axes(dim, dim)
+        Q = random_axes(dim, dim)
+        L = 10 ** (np.arange(dim) / (2 * (dim - 1)))
+        if xopt is None:
+            xopt = np.zeros(dim) 
+        def attractivesector(x):
+            z = np.dot(np.dot(x - xopt, R.T) * L, Q.T)
+            s = np.ones(x.shape)
+            s[z * xopt > 0] = 1e2
+            w = np.sum((s * z)**2, axis=1)
+            # osz
+            c1 = 10
+            c2 = 7.9
+            hatw = np.log(np.abs(w))
+            osz = np.exp(hatw + 0.049 * (np.sin(c1 * hatw) + np.sin(c2 * hatw)))
+            return osz ** 0.9
+        return attractivesector
