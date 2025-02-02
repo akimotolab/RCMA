@@ -338,7 +338,6 @@ class VSModel(AbstractModel):
         return gamma**0.5
 
 
-
 class FullModel(AbstractModel):
     """Internal Covariance Model : Full Model"""
 
