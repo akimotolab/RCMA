@@ -141,6 +141,11 @@ class BenchmarkFunction:
             self.func = self.generate_attractive_sector(dim)
             self.x0 = 3.0 * np.random.randn(dim)
             self.sigma0 = 1.0 * np.ones(dim)
+        elif id_func == 20:
+            # attractive sector
+            self.func = self.skewsphere
+            self.x0 = 3.0 * np.random.randn(dim)
+            self.sigma0 = 1.0 * np.ones(dim)
         else:
             raise NotImplementedError
 
@@ -208,6 +213,11 @@ class BenchmarkFunction:
             (x[:, :-1]**2 - x[:, 1:])**2, axis=1) + np.sum(
                 (x[:, :-1] - 1.0)**2, axis=1)
     
+    def skewsphere(self, x):
+        s = np.ones(x.shape)
+        s[x > 0] = 1e4
+        return np.sum(s * x ** 2, axis=1)
+    
     def generate_bent_cigar(self, dim, xopt=None):
         R = random_axes(dim, dim)
         T = asymmetric_transformation_generator(dim, beta=0.5)
@@ -224,13 +234,12 @@ class BenchmarkFunction:
         Q = random_axes(dim, dim)
         L = 10 ** (np.arange(dim) / (2 * (dim - 1)))
         if xopt is None:
-            xopt = np.zeros(dim) 
+            xopt = np.random.randn(dim)
         def attractivesector(x):
             z = np.dot(np.dot(x - xopt, R.T) * L, Q.T)
             s = np.ones(x.shape)
-            s[z * xopt > 0] = 1e2
+            s[z * xopt > 0] = 1e2 
             w = np.sum((s * z)**2, axis=1)
-            # osz
             c1 = 10
             c2 = 7.9
             hatw = np.log(np.abs(w))

@@ -566,6 +566,10 @@ class DdCma:
             self.dm = np.zeros(self.N)  
             self.mva_dr2 = 0.0
             self.mva_dr1 = 0.0
+            # safeguard against step-size divergence on skew functions
+            self.ssa_safeguard = True
+            self.last_avg_fvalues = np.inf
+            self.last_first_fvalues = np.inf
         else:
             # csa
             self.ps = np.zeros(self.N)
@@ -635,7 +639,7 @@ class DdCma:
         dy = np.dot(w[w > 0], sary[w > 0])
         self.dm = self.cm * self.sigma * self.D * dy
         self.xmean += self.dm
-        
+
         # step-size adaptation        
         self.sigma_old = self.sigma
         if self.flg_tpa:
@@ -650,12 +654,20 @@ class DdCma:
             var = (3 * (self.gs**2 + 1) * self.lam - (self.gs - 1)**2 * (self.lam + 1)) * (self.lam + 1) / (self.lam - 1)**2 / 36 / self.gs**2
             self.ds = max(self.ds_factor * (self.mva_dr2 - self.mva_dr1**2) / (self.mva_dr1**2 + var / 4), 1)
             self.dr = dr
-
-            # clip
-            if dr > 0:
-                self.sigma *= math.exp(min(dr / self.ds, 1))
+    
+            # safeguard against step-size divergence on skew functions
+            if self.ssa_safeguard:
+                ss_update = (self.last_avg_fvalues > np.mean(arf)) or (self.last_first_fvalues > arf[0])
+                self.last_avg_fvalues = np.mean(arf)
+                self.last_first_fvalues = arf[0]
             else:
-                self.sigma *= math.exp(max(dr / self.ds, -1))
+                ss_update = True
+            if ss_update:
+                # clip
+                if dr > 0:
+                    self.sigma *= math.exp(min(dr / self.ds, 1))
+                else:
+                    self.sigma *= math.exp(max(dr / self.ds, -1))
         else:
             cs = max(1.0 / (self.t + 1), self.cs)
             self.ps = (1 - cs) * self.ps + math.sqrt(cs * (2 - cs) * self.mueff_positive) * dz

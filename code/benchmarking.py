@@ -265,8 +265,10 @@ class LMCMA(Optimizer):
 
 
 class DDCMA(Optimizer):
-    def __init__(self, func, xmean0, sigma0):
-        self.es = ddcma.DdCma(xmean0, sigma0)
+    def __init__(self, func, xmean0, sigma0, lam=None):
+        dim = len(xmean0)
+        lam = 4 + int(3 * math.log(dim)) if lam is None else lam
+        self.es = ddcma.DdCma(xmean0, sigma0, lam=lam)
         self.func = func
     def onestep(self):
         self.es.onestep(self.func)
@@ -286,8 +288,10 @@ class DDCMA(Optimizer):
 
 
 class DDCMATPA(Optimizer):
-    def __init__(self, func, xmean0, sigma0):
-        self.es = ddrcma.DdCma(func, xmean0, sigma0, model_type=ddrcma.FullModel, flg_covariance_cold_start=False)
+    def __init__(self, func, xmean0, sigma0, lam=None):
+        dim = len(xmean0)
+        lam = 4 + int(3 * math.log(dim)) if lam is None else lam
+        self.es = ddrcma.DdCma(func, xmean0, sigma0, lam=lam, model_type=ddrcma.FullModel, flg_covariance_cold_start=False)
     def onestep(self):
         self.es.onestep()
     def fbest(self):
@@ -305,8 +309,10 @@ class DDCMATPA(Optimizer):
         return self.es.xmean
 
 class CMA(Optimizer):
-    def __init__(self, func, xmean0, sigma0):
-        self.es = ddcma.DdCma(xmean0, sigma0, flg_variance_update=False)
+    def __init__(self, func, xmean0, sigma0, lam=None):
+        dim = len(xmean0)
+        lam = 4 + int(3 * math.log(dim)) if lam is None else lam
+        self.es = ddcma.DdCma(xmean0, sigma0, lam=lam, flg_variance_update=False)
         self.func = func
     def onestep(self):
         self.es.onestep(self.func)
@@ -325,8 +331,10 @@ class CMA(Optimizer):
         return self.es.xmean
 
 class SEPCMA(Optimizer):
-    def __init__(self, func, xmean0, sigma0):
-        self.es = ddcma.DdCma(xmean0, sigma0, flg_covariance_update=False)
+    def __init__(self, func, xmean0, sigma0, lam=None):
+        dim = len(xmean0)
+        lam = 4 + int(3 * math.log(dim)) if lam is None else lam
+        self.es = ddcma.DdCma(xmean0, sigma0, lam=lam, flg_covariance_update=False)
         self.func = func
     def onestep(self):
         self.es.onestep(self.func)
@@ -346,10 +354,10 @@ class SEPCMA(Optimizer):
 
 
 class DDRCMA(Optimizer):
-    def __init__(self, func, xmean0, sigma0):
+    def __init__(self, func, xmean0, sigma0, lam=None):
         dim = len(xmean0)
-        lam = 4 + int(3 * math.log(dim)) 
-        self.es = ddrcma.DdCma(func, xmean0, sigma0, model_type=ddrcma.VSModel, kmax=lam)
+        lam = 4 + int(3 * math.log(dim)) if lam is None else lam
+        self.es = ddrcma.DdCma(func, xmean0, sigma0, lam=lam, model_type=ddrcma.VSModel, kmax=lam)
     def onestep(self):
         self.es.onestep()
     def fbest(self):
@@ -367,9 +375,10 @@ class DDRCMA(Optimizer):
         return self.es.xmean
 
 class DDRCMAFULL(Optimizer):
-    def __init__(self, func, xmean0, sigma0):
+    def __init__(self, func, xmean0, sigma0, lam=None):
         dim = len(xmean0)
-        self.es = ddrcma.DdCma(func, xmean0, sigma0, model_type=ddrcma.VSModel, kmax=dim-1)
+        lam = 4 + int(3 * math.log(dim)) if lam is None else lam
+        self.es = ddrcma.DdCma(func, xmean0, sigma0, lam=lam, model_type=ddrcma.VSModel, kmax=dim-1)
     def onestep(self):
         self.es.onestep()
     def fbest(self):
@@ -387,10 +396,10 @@ class DDRCMAFULL(Optimizer):
         return self.es.xmean
 
 class VKDCMA(Optimizer):
-    def __init__(self, func, xmean0, sigma0):
+    def __init__(self, func, xmean0, sigma, lam=None):
         dim = len(xmean0)
-        lam = 4 + int(3 * math.log(dim)) 
-        self.es = vkdcma.VkdCma(func, xmean0, sigma0, kmax=lam, batch_evaluation=True)
+        lam = 4 + int(3 * math.log(dim)) if lam is None else lam
+        self.es = vkdcma.VkdCma(func, xmean0, sigma0, lam=lam, kmax=lam, batch_evaluation=True)
     def onestep(self):
         self.es._onestep()
     def fbest(self):
@@ -414,10 +423,10 @@ class VKDCMA(Optimizer):
 
 
 class VKDCMANOADAPT(Optimizer):
-    def __init__(self, func, xmean0, sigma0):
+    def __init__(self, func, xmean0, sigma0, lam=None):
         dim = len(xmean0)
-        lam = 4 + int(3 * math.log(dim)) 
-        self.es = vkdcma.VkdCma(func, xmean0, sigma0, k_init=lam, kmin=lam, kmax=lam, batch_evaluation=True)
+        lam = 4 + int(3 * math.log(dim)) if lam is None else lam
+        self.es = vkdcma.VkdCma(func, xmean0, sigma0, lam=lam, k_init=lam, kmin=lam, kmax=lam, batch_evaluation=True)
     def onestep(self):
         self.es._onestep()
     def fbest(self):
@@ -462,10 +471,10 @@ class LMMA(Optimizer):
 
 
 class RCMA(Optimizer):
-    def __init__(self, func, xmean0, sigma0):
+    def __init__(self, func, xmean0, sigma0, lam=None):
         dim = len(xmean0)
-        lam = 4 + int(3 * math.log(dim)) 
-        self.es = ddrcma.DdCma(func, xmean0, sigma0, model_type=ddrcma.VSModel, kmax=lam, flg_variance_update=False)
+        lam = 4 + int(3 * math.log(dim)) if lam is None else lam
+        self.es = ddrcma.DdCma(func, xmean0, sigma0, lam=lam, model_type=ddrcma.VSModel, kmax=lam, flg_variance_update=False)
     def onestep(self):
         self.es.onestep()
     def fbest(self):
@@ -483,9 +492,10 @@ class RCMA(Optimizer):
         return self.es.xmean
 
 class RCMAFULL(Optimizer):
-    def __init__(self, func, xmean0, sigma0):
+    def __init__(self, func, xmean0, sigma0, lam=None):
         dim = len(xmean0)
-        self.es = ddrcma.DdCma(func, xmean0, sigma0, model_type=ddrcma.VSModel, kmax=dim-1, flg_variance_update=False)
+        lam = 4 + int(3 * math.log(dim)) if lam is None else lam
+        self.es = ddrcma.DdCma(func, xmean0, sigma0, lam=lam, model_type=ddrcma.VSModel, kmax=dim-1, flg_variance_update=False)
     def onestep(self):
         self.es.onestep()
     def fbest(self):
@@ -523,13 +533,13 @@ if __name__ == "__main__":
             ftarget = args.target
             maxeval = args.maxeval * dim
             maxsec = args.maxsec
-            lam = 4 + int(3 * math.log(dim)) if args.popsize < 1 else args.popsize
+            lam = int(4 + np.floor(3 * np.log(dim))) if args.popsize < 1 else args.popsize
             maxitr = maxeval // lam + 1 
             # method 
             elapsed_time = 0.0
             elapsed_eval = 0
             fbest = 1.0
-            method = OptimizerList[args.method](func, xmean0, sigma0)
+            method = OptimizerList[args.method](func, xmean0, sigma0, lam=lam)
             sigma = method.stepsize()
             # termination
             checker = Checker(method, dim, lam)
