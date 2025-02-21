@@ -319,7 +319,8 @@ class VSModel(AbstractModel):
         if self.flg_k_update:
             if self.flg_short_axis:
                 if self.S[ks-1] < 1.0/self.beta_cond:
-                    kshort = min(int(math.ceil(1.4 * self.kshort)), self.kmax // 2, self.kmax - klong)
+                    kshort = min(int(math.ceil(1.4 * self.kshort)), max(self.kmax // 2, self.kmax - klong))
+                    klong = min(klong, self.kmax - kshort)
                     self.S[ks:kshort] = 1.0
                     self.t_wait = 0
                 elif self.t_wait > self.t_wait_for_next_decrease:
@@ -332,7 +333,6 @@ class VSModel(AbstractModel):
             elif self.t_wait > self.t_wait_for_next_decrease:
                 klong = np.sum(self.S > self.beta_cond) + 1
                 self.S[-kl:-klong] = 1.0
-
             self.update_complexity(kshort, klong) 
 
         return gamma**0.5
@@ -566,9 +566,10 @@ class DdCma:
             self.dm = np.zeros(self.N)  
             self.mva_dr2 = 0.0
             self.mva_dr1 = 0.0
-            # safeguard against step-size divergence on skew functions
-            self.ssa_safeguard = True
-            self.last_avg_fvalues = np.inf
+            # Safeguard against step-size divergence on skew functions
+            # Note: It was False for the experiments in the original paper.
+            self.ssa_safeguard = True  
+            self.last_med_fvalues = np.inf
             self.last_first_fvalues = np.inf
         else:
             # csa
@@ -657,8 +658,8 @@ class DdCma:
     
             # safeguard against step-size divergence on skew functions
             if self.ssa_safeguard:
-                ss_update = (self.last_avg_fvalues > np.mean(arf)) or (self.last_first_fvalues > arf[0])
-                self.last_avg_fvalues = np.mean(arf)
+                ss_update = (self.last_med_fvalues > np.median(arf)) or (self.last_first_fvalues > arf[0])
+                self.last_med_fvalues = np.median(arf)
                 self.last_first_fvalues = arf[0]
             else:
                 ss_update = True

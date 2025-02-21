@@ -544,7 +544,7 @@ if __name__ == "__main__":
             # termination
             checker = Checker(method, dim, lam)
             # logger
-            filename = args.path + "method{}_func{}_dim{}_seed{}.txt".format(args.method, funcid, dim, args.seed)
+            filename = args.path + "method{}_func{}_dim{}_lam{}_seed{}.txt".format(args.method, funcid, dim, lam, args.seed)
             with open(filename, "w") as f:
                 f.write("{} {} {} {}\n".format(elapsed_eval, elapsed_time, fbest, sigma))
 
@@ -609,8 +609,8 @@ if __name__ == "__main__":
                 print(traceback.format_exc())
 
             if args.debug:
-                fig, axdict = logger.plot()
+                fig, axdict = logger.plot(xaxis=1)
                 for key in axdict:
-                    if key not in ('xmean'):
+                    if not any(sub in key for sub in ['xmean',]):
                         axdict[key].set_yscale('log')
                 plt.savefig(logger.prefix + '.pdf')
