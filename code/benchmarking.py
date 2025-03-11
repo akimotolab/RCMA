@@ -567,7 +567,7 @@ if __name__ == "__main__":
                     fbest = method.fbest()
                     sigma = method.stepsize()
                     # termination check
-                    if fbest / f0 <= ftarget:
+                    if fbest / f0 <= ftarget: 
                         condition = "ftarget"
                         break
                     if elapsed_eval >= maxeval:
